@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { ActivityCategory, categoryLabels, categoryIcons } from '@/types/activity';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface CategoryFilterProps {
@@ -22,36 +21,45 @@ const categories: (ActivityCategory | 'all')[] = [
 export function CategoryFilter({ selected, onChange, counts }: CategoryFilterProps) {
   return (
     <div className="flex flex-wrap gap-2">
-      {categories.map((cat) => (
-        <motion.div
-          key={cat}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Button
-            variant={selected === cat ? 'default' : 'outline'}
-            size="sm"
+      {categories.map((cat) => {
+        const isSelected = selected === cat;
+        return (
+          <motion.button
+            key={cat}
             onClick={() => onChange(cat)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className={cn(
-              "transition-all",
-              selected === cat && "gradient-primary border-0"
+              "relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+              isSelected 
+                ? "text-white shadow-md" 
+                : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:border-border hover:shadow-sm"
             )}
           >
-            {cat !== 'all' && (
-              <span className="mr-1.5">{categoryIcons[cat]}</span>
+            {isSelected && (
+              <motion.div
+                layoutId="activeCategory"
+                className="absolute inset-0 gradient-primary rounded-full"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
             )}
-            {cat === 'all' ? 'All' : categoryLabels[cat]}
-            <span className={cn(
-              "ml-2 px-1.5 py-0.5 rounded-full text-xs",
-              selected === cat 
-                ? "bg-primary-foreground/20 text-primary-foreground" 
-                : "bg-muted text-muted-foreground"
-            )}>
-              {counts[cat]}
+            <span className="relative z-10 flex items-center gap-1.5">
+              {cat !== 'all' && (
+                <span className="text-base">{categoryIcons[cat]}</span>
+              )}
+              {cat === 'all' ? 'All' : categoryLabels[cat]}
+              <span className={cn(
+                "px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors",
+                isSelected 
+                  ? "bg-white/20" 
+                  : "bg-muted"
+              )}>
+                {counts[cat]}
+              </span>
             </span>
-          </Button>
-        </motion.div>
-      ))}
+          </motion.button>
+        );
+      })}
     </div>
   );
 }
