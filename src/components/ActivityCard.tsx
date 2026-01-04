@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Linkedin, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Linkedin, MoreVertical, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
 import { Activity, categoryLabels, categoryIcons } from '@/types/activity';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,12 +21,21 @@ interface ActivityCardProps {
 }
 
 const categoryColorMap: Record<string, string> = {
-  leadership: 'bg-category-leadership/10 text-category-leadership border-category-leadership/20',
-  volunteer: 'bg-category-volunteer/10 text-category-volunteer border-category-volunteer/20',
-  sports: 'bg-category-sports/10 text-category-sports border-category-sports/20',
-  clubs: 'bg-category-clubs/10 text-category-clubs border-category-clubs/20',
-  research: 'bg-category-research/10 text-category-research border-category-research/20',
-  arts: 'bg-category-arts/10 text-category-arts border-category-arts/20',
+  leadership: 'bg-category-leadership/10 text-category-leadership border-category-leadership/30',
+  volunteer: 'bg-category-volunteer/10 text-category-volunteer border-category-volunteer/30',
+  sports: 'bg-category-sports/10 text-category-sports border-category-sports/30',
+  clubs: 'bg-category-clubs/10 text-category-clubs border-category-clubs/30',
+  research: 'bg-category-research/10 text-category-research border-category-research/30',
+  arts: 'bg-category-arts/10 text-category-arts border-category-arts/30',
+};
+
+const categoryBorderMap: Record<string, string> = {
+  leadership: 'hover:border-category-leadership/40',
+  volunteer: 'hover:border-category-volunteer/40',
+  sports: 'hover:border-category-sports/40',
+  clubs: 'hover:border-category-clubs/40',
+  research: 'hover:border-category-research/40',
+  arts: 'hover:border-category-arts/40',
 };
 
 export function ActivityCard({ activity, index, onEdit, onDelete, onToggleSync }: ActivityCardProps) {
@@ -42,49 +51,81 @@ export function ActivityCard({ activity, index, onEdit, onDelete, onToggleSync }
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.3 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ delay: index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      layout
     >
-      <Card className="group shadow-card hover:shadow-card-hover transition-all duration-300 border-border/50 overflow-hidden">
+      <Card className={cn(
+        "group relative overflow-hidden border-border/50 shadow-card hover:shadow-card-hover transition-all duration-300",
+        categoryBorderMap[activity.category]
+      )}>
+        {/* Synced indicator */}
+        {activity.linkedInSynced && (
+          <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
+            <div className="absolute top-2 -right-6 w-20 bg-linkedin text-white text-[10px] font-semibold text-center py-0.5 rotate-45 shadow-sm">
+              Synced
+            </div>
+          </div>
+        )}
+
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1 min-w-0">
-              <span className="text-2xl">{categoryIcons[activity.category]}</span>
+              <motion.span 
+                className="text-3xl mt-0.5"
+                whileHover={{ scale: 1.2, rotate: 10 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                {categoryIcons[activity.category]}
+              </motion.span>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-foreground truncate">{activity.name}</h3>
-                <p className="text-sm text-muted-foreground truncate">{activity.organization}</p>
+                <h3 className="font-bold text-foreground truncate text-lg group-hover:text-primary transition-colors">
+                  {activity.name}
+                </h3>
+                <p className="text-sm text-muted-foreground truncate mt-0.5">
+                  {activity.organization}
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-8 w-8 transition-colors",
+                  "h-9 w-9 rounded-xl transition-all duration-300",
                   activity.linkedInSynced 
-                    ? "text-primary bg-primary/10 hover:bg-primary/20" 
-                    : "text-muted-foreground hover:text-primary"
+                    ? "text-linkedin bg-linkedin/10 hover:bg-linkedin/20" 
+                    : "text-muted-foreground hover:text-linkedin hover:bg-linkedin/10"
                 )}
                 onClick={() => onToggleSync(activity.id)}
                 title={activity.linkedInSynced ? 'Synced to LinkedIn' : 'Click to sync'}
               >
-                <Linkedin className="h-4 w-4" />
+                {activity.linkedInSynced ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Linkedin className="h-4 w-4" />
+                )}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(activity)}>
-                    <Pencil className="h-4 w-4 mr-2" />
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onClick={() => onEdit(activity)} className="gap-2">
+                    <Pencil className="h-4 w-4" />
                     Edit
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => onDelete(activity.id)}
-                    className="text-destructive focus:text-destructive"
+                    className="gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4" />
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -92,39 +133,42 @@ export function ActivityCard({ activity, index, onEdit, onDelete, onToggleSync }
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+        
+        <CardContent className="pt-0 space-y-4">
           <Badge 
             variant="outline" 
-            className={cn("font-medium", categoryColorMap[activity.category])}
+            className={cn("font-semibold px-3 py-1", categoryColorMap[activity.category])}
           >
             {activity.role}
           </Badge>
           
-          <p className="text-sm text-muted-foreground line-clamp-2">
+          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
             {activity.description}
           </p>
           
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              {formatDate(activity.startDate)} - {activity.isOngoing ? 'Present' : formatDate(activity.endDate!)}
-            </span>
-            {activity.hours && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
-                {activity.hours} hrs
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                {formatDate(activity.startDate)} - {activity.isOngoing ? (
+                  <span className="text-success font-medium">Present</span>
+                ) : formatDate(activity.endDate!)}
               </span>
-            )}
+              {activity.hours && (
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Clock className="h-3.5 w-3.5" />
+                  {activity.hours}h
+                </span>
+              )}
+            </div>
           </div>
           
-          <div className="flex items-center gap-2 pt-1">
-            <Badge 
-              variant="secondary" 
-              className={cn("text-xs", categoryColorMap[activity.category])}
-            >
-              {categoryLabels[activity.category]}
-            </Badge>
-          </div>
+          <Badge 
+            variant="secondary" 
+            className={cn("text-xs font-medium", categoryColorMap[activity.category])}
+          >
+            {categoryLabels[activity.category]}
+          </Badge>
         </CardContent>
       </Card>
     </motion.div>

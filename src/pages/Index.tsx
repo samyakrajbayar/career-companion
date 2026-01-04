@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, ActivityCategory } from '@/types/activity';
 import { useActivities } from '@/hooks/useActivities';
 import { Header } from '@/components/Header';
@@ -10,6 +10,7 @@ import { ActivityModal } from '@/components/ActivityModal';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -17,12 +18,27 @@ const Index = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   const filteredActivities = useMemo(() => {
-    if (selectedCategory === 'all') return activities;
-    return activities.filter(a => a.category === selectedCategory);
-  }, [activities, selectedCategory]);
+    let result = activities;
+    
+    if (selectedCategory !== 'all') {
+      result = result.filter(a => a.category === selectedCategory);
+    }
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(a => 
+        a.name.toLowerCase().includes(query) ||
+        a.organization.toLowerCase().includes(query) ||
+        a.role.toLowerCase().includes(query)
+      );
+    }
+    
+    return result;
+  }, [activities, selectedCategory, searchQuery]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<ActivityCategory | 'all', number> = {
@@ -43,7 +59,7 @@ const Index = () => {
   const handleAddActivity = (data: Omit<Activity, 'id' | 'createdAt' | 'linkedInSynced'>) => {
     addActivity(data);
     toast({
-      title: 'Activity Added',
+      title: '🎉 Activity Added!',
       description: `"${data.name}" has been added to your activities.`,
     });
   };
@@ -52,7 +68,7 @@ const Index = () => {
     if (editingActivity) {
       updateActivity(editingActivity.id, data);
       toast({
-        title: 'Activity Updated',
+        title: '✨ Activity Updated',
         description: `"${data.name}" has been updated.`,
       });
       setEditingActivity(null);
@@ -76,9 +92,9 @@ const Index = () => {
       }
     });
     toast({
-      title: 'LinkedIn Sync',
+      title: '🔗 LinkedIn Sync',
       description: unsyncedCount > 0 
-        ? `${unsyncedCount} activities marked for sync. Enable Cloud to connect to LinkedIn API.`
+        ? `${unsyncedCount} activities marked for sync! Enable Cloud for auto-updates.`
         : 'All activities are already synced!',
     });
   };
@@ -87,7 +103,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-6xl py-8 px-4">
+      {/* Background mesh gradient */}
+      <div className="fixed inset-0 gradient-mesh pointer-events-none" />
+      
+      <div className="relative z-10 container max-w-7xl py-8 px-4 md:px-6">
         <Header 
           onSyncAll={handleSyncAll}
           syncedCount={syncedCount}
@@ -96,44 +115,74 @@ const Index = () => {
 
         <StatsOverview activities={activities} />
 
-        <div className="mt-8 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <motion.div 
+          className="mt-10 mb-6 flex flex-col gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 className="text-xl font-bold text-foreground">Your Activities</h2>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search activities..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-64 bg-card border-border/50 focus-visible:ring-primary/50"
+                />
+              </div>
+              <Button 
+                onClick={() => {
+                  setEditingActivity(null);
+                  setModalOpen(true);
+                }}
+                className="gradient-primary font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add Activity
+              </Button>
+            </div>
+          </div>
+          
           <CategoryFilter
             selected={selectedCategory}
             onChange={setSelectedCategory}
             counts={categoryCounts}
           />
-          <Button 
-            onClick={() => {
-              setEditingActivity(null);
-              setModalOpen(true);
-            }}
-            className="gradient-primary"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Add Activity
-          </Button>
-        </div>
+        </motion.div>
 
-        {filteredActivities.length === 0 ? (
+        {activities.length === 0 ? (
           <EmptyState onAddActivity={() => setModalOpen(true)} />
+        ) : filteredActivities.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16"
+          >
+            <p className="text-muted-foreground">No activities match your search.</p>
+          </motion.div>
         ) : (
           <motion.div 
-            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
             layout
           >
-            {filteredActivities.map((activity, index) => (
-              <ActivityCard
-                key={activity.id}
-                activity={activity}
-                index={index}
-                onEdit={(a) => {
-                  setEditingActivity(a);
-                  setModalOpen(true);
-                }}
-                onDelete={handleDelete}
-                onToggleSync={toggleLinkedInSync}
-              />
-            ))}
+            <AnimatePresence mode="popLayout">
+              {filteredActivities.map((activity, index) => (
+                <ActivityCard
+                  key={activity.id}
+                  activity={activity}
+                  index={index}
+                  onEdit={(a) => {
+                    setEditingActivity(a);
+                    setModalOpen(true);
+                  }}
+                  onDelete={handleDelete}
+                  onToggleSync={toggleLinkedInSync}
+                />
+              ))}
+            </AnimatePresence>
           </motion.div>
         )}
 
